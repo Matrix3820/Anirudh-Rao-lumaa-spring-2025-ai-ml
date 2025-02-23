@@ -160,6 +160,7 @@ if __name__ == "__main__":
     # Clean and Preprocess Text data within each selected feature from config
     for column in Selected_Features:
         column_tag = "Cleaned_" + column
+        movies_dataframe[column] = movies_dataframe[column].astype(str)
         movies_dataframe[column_tag] = movies_dataframe[column].apply(
             lambda x: preprocess_text(x, lemmatizer, stop_words))
 
