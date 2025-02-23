@@ -139,7 +139,7 @@ def recommend_movies_bert(user_input, df, model, top_n=5) -> pd.DataFrame:
 if __name__ == "__main__":
     # Fetch/Parse command-line arguments
     parser = argparse.ArgumentParser(description="Movie Recommendation System")
-    parser.add_argument("-q","--query", type=str, default = "Christopher Nolan SciFi movies", help="Enter a query for recommendations")
+    parser.add_argument("-q","--query", type=str, default = "I like Action movies set in space", help="Enter a query for recommendations")
     parser.add_argument("-m", "--model", type=str, choices=["tfidf", "bert", "both"], required=True, help="Choose the model for recommendations: 'tfidf' or 'bert'")
     args = parser.parse_args()
     query = args.query  # Loads the query supplied by the user or will take the default value if -q/--query not supplied
