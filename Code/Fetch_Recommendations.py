@@ -4,17 +4,49 @@ import configparser
 
 import nltk
 import numpy as np
+import pandas as pd
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.metrics.pairwise import cosine_similarity
 
 from Load_and_Preprocess import fetch_vectorizer_and_tfidf, load_base_dataset, preprocess_text
 
 nltk.download('stopwords')
 nltk.download('wordnet')
 
-def recommend_movies_tfidf(user_input, df, vectorizer, tfidf_matrix, top_n=5):
+def calculate_cosine_similarity(vector1: np.ndarray, vector2: np.ndarray) -> float:
+    """
+    Compute the cosine similarity between two vectors
+
+    Formula:
+    -------------------------
+    cosine_similarity = dot(A.B) / (NORM(A)*NORM(B))
+
+    Parameters:
+    ----------
+    vec1 : np.ndarray
+        The first vector.
+    vec2 : np.ndarray
+        The second vector.
+
+    Returns:
+    -------
+    float
+        The cosine similarity score between vec1 and vec2. Ranges from -1 (opposite) to 1 (identical).
+    """
+    vecs_dot = np.dot(vector1, vector2)
+    vec1_norm = np.linalg.norm(vector1)
+    vec2_norm = np.linalg.norm(vector2)
+
+    # Prevent Division by 0 error
+    if vec1_norm == 0 or vec2_norm == 0:
+        return 0.0
+
+    return vecs_dot/(vec1_norm*vec2_norm)
+
+
+def recommend_movies_tfidf(user_input, df, vectorizer, tfidf_matrix, top_n=5) -> pd.DataFrame:
     """Recommend similar movies using TF-IDF vectorization.
 
     This function takes a user's input description, converts it into a TF-IDF vector,
@@ -39,22 +71,26 @@ def recommend_movies_tfidf(user_input, df, vectorizer, tfidf_matrix, top_n=5):
         A DataFrame containing the top N recommended movies with their titles and overviews.
 
     """
-    # Vectorize User Input
-    query_vector = vectorizer.transform([user_input])
+    # Vectorize User Input and convert to Numpy Array
+    user_vec = vectorizer.transform([user_input]).toarray().flatten()
 
-    # Compute Cosine Similarity
-    similarity_scores = cosine_similarity(query_vector, tfidf_matrix)[0]
+    # Convert TF-IDF Matrix to np Array
+    tfidf_matrix_np = tfidf_matrix.toarray()
 
-    # Sort, Reverse and Slice for Top_N Recommendations - fetch N indices
+    # Compute cosine similarity for the query against the Text descriptors for every movie
+    similarity_scores = np.array([calculate_cosine_similarity(user_vec, movie_vec) for movie_vec in tfidf_matrix_np])
+
+    # Get indices of top N most similar movies
     top_n_indices = similarity_scores.argsort()[::-1][:top_n]
 
+    # Retrieve recommended movies and similarity scores
     recommendations = df.iloc[top_n_indices].copy()
     recommendations['Similarity_Score'] = similarity_scores[top_n_indices]
 
     return recommendations
 
 
-def recommend_movies_bert(user_input, df, model, top_n=5):
+def recommend_movies_bert(user_input, df, model, top_n=5) -> pd.DataFrame:
 
     """Recommend similar movies based on BERT embeddings.
 
@@ -82,16 +118,19 @@ def recommend_movies_bert(user_input, df, model, top_n=5):
     # Preprocess User Input - Only convert to lower
     query_cleaned = user_input.lower()
 
-    # Generate BERT embedding for User Query
-    user_embedding = model.encode(query_cleaned, convert_to_tensor=True)
+    # Generate BERT embedding for User Query and convert to Numpy array
+    user_embedding = model.encode(query_cleaned, convert_to_tensor=True).cpu().numpy()
 
-    # Compute Cosine Similarity
-    movie_embeddings = np.vstack(df['_Embeddings'].values)
-    similarity_scores = cosine_similarity([user_embedding.cpu().numpy()], movie_embeddings)[0]
+    # Convert stored embeddings to Numpy Array
+    movie_embeddings = np.array([embedding.cpu().numpy() for embedding in df['_Embeddings'].values])
 
-    # Sort, Reverse and Slice for Top_N Recommendations - fetch N indices
+    # Compute cosine similarity for the query against the Text descriptors for every movie
+    similarity_scores = np.array([calculate_cosine_similarity(user_embedding, movie_emb) for movie_emb in movie_embeddings])
+
+    # Get indices of top N most similar movies
     top_n_indices = similarity_scores.argsort()[::-1][:top_n]
 
+    # Retrieve recommended movies and similarity scores
     recommendations = df.iloc[top_n_indices].copy()
     recommendations['Similarity_Score'] = similarity_scores[top_n_indices]
 
