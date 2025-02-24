@@ -73,7 +73,7 @@ Once the Requirements and Setup has been completed, we can execute the code to g
 ## Deliverables
 
 1. **Short Video Demo**
-   - Link :
+   - Link : https://drive.google.com/file/d/1_0iUTjDkquqta2rzQ6GzjUaeq5Bi5sCs/view?usp=sharing
      
 2. **Implementation of Solution**
    - Load and preprocess your dataset - Code/Load_and_Preprocess.py - load_base_dataset(), preprocess_text()  
