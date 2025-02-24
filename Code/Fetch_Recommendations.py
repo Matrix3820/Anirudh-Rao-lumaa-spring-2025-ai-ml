@@ -168,6 +168,7 @@ if __name__ == "__main__":
     movies_dataframe["Cleaned_Text"] = movies_dataframe[[f"Cleaned_{col}" for col in Selected_Features]].agg(" ".join, axis=1)
 
     selected_columns = [Title_Column] + ["Similarity_Score"] + Selected_Features
+    print("\nQuery used for Recommendations : {}".format(query))
 
     if model == "tfidf":
         vectorizer, tfidf_matrix = fetch_vectorizer_and_tfidf(movies_dataframe)
